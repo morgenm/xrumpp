@@ -10,6 +10,8 @@ members = [
     "crates/term_input_macros",
     "crates/termbox",
     "crates/tiny",
+    "crates/libxrumpp_client",
+    "crates/libstrophe-sys"
 ]
 
 [profile.release]
