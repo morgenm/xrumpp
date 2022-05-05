@@ -596,6 +596,7 @@ name = "libxrumpp_client"
 version = "0.1.0"
 dependencies = [
  "libstrophe-sys",
+ "log",
  "tokio",
  "tokio-stream",
 ]
@@ -1377,6 +1378,7 @@ dependencies = [
  "libtiny_logger",
  "libtiny_tui",
  "libtiny_wire",
+ "libxrumpp_client",
  "log",
  "rustc_tools_util",
  "serde",

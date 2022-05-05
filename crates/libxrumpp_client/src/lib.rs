@@ -5,6 +5,9 @@ use tokio_stream::wrappers::ReceiverStream;
 use tokio_stream::StreamExt;
 use std::ptr::null;
 
+#[macro_use]
+extern crate log;
+
 extern crate libstrophe_sys;
 use libstrophe_sys::*;
 
@@ -151,7 +154,7 @@ unsafe extern "C" fn connection_handler(
     stream_error: *mut xmpp_stream_error_t,
     userdata: *mut ::std::os::raw::c_void
 ) {
-    if status == XMPP_CONN_CONNECT {
+    if event == xmpp_conn_event_t_XMPP_CONN_CONNECT {
         debug!("Connection xmpp");
     }
     else {

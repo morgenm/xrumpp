@@ -12,6 +12,7 @@ mod utils;
 mod tests;
 
 use libtiny_client::{Client, ServerInfo};
+use libxrumpp_client::{XMPPClient, XMPPServerInfo};
 use libtiny_common::{ChanNameRef, MsgTarget};
 use libtiny_logger::{Logger, LoggerInitError};
 use libtiny_tui::TUI;
@@ -137,43 +138,53 @@ fn run(
 
         let tui = UI::new(tui, logger);
 
-        let mut clients: Vec<Client> = Vec::with_capacity(servers.len());
+        //let mut clients: Vec<Client> = Vec::with_capacity(servers.len());
+        let mut irc_clients: Vec<Client> = Vec::new();
+        let mut xmpp_clients: Vec<XMPPClient> = Vec::new();
 
         for server in servers.iter().cloned() {
             tui.new_server_tab(&server.addr, server.alias);
 
-            let server_info = ServerInfo {
-                addr: server.addr,
-                port: server.port,
-                tls: server.tls,
-                pass: server.pass,
-                realname: server.realname,
-                nicks: server.nicks,
-                auto_join: server
-                    .join
-                    .iter()
-                    .map(|c| ChanNameRef::new(c).to_owned())
-                    .collect(),
-                nickserv_ident: server.nickserv_ident,
-                sasl_auth: server.sasl_auth.map(|auth| libtiny_client::SASLAuth {
-                    username: auth.username,
-                    password: auth.password,
-                }),
-            };
+            match server.server_type.unwrap() {
+                config::ServerType::IRC => {
+                    let server_info = ServerInfo {
+                        addr: server.addr,
+                        port: server.port,
+                        tls: server.tls,
+                        pass: server.pass,
+                        realname: server.realname,
+                        nicks: server.nicks,
+                        auto_join: server
+                            .join
+                            .iter()
+                            .map(|c| ChanNameRef::new(c).to_owned())
+                            .collect(),
+                        nickserv_ident: server.nickserv_ident,
+                        sasl_auth: server.sasl_auth.map(|auth| libtiny_client::SASLAuth {
+                            username: auth.username,
+                            password: auth.password,
+                        }),
+                    };
 
-            let (client, rcv_conn_ev) = Client::new(server_info);
+                    let (client, rcv_conn_ev) = Client::new(server_info);
 
-            let tui_clone = tui.clone();
-            let client_clone = client.clone();
+                    let tui_clone = tui.clone();
+                    let client_clone = client.clone();
 
-            // Spawn a task to handle connection events
-            tokio::task::spawn_local(conn::task(rcv_conn_ev, tui_clone, Box::new(client_clone)));
+                    // Spawn a task to handle connection events
+                    tokio::task::spawn_local(conn::task(rcv_conn_ev, tui_clone, Box::new(client_clone)));
 
-            clients.push(client);
+                    irc_clients.push(client);
+                },
+                config::ServerType::XMPP => {
+                    debug!("XMPP Server");
+                }
+            }
         }
 
+        // TODO: Change this to handle both types of clients
         // Block on TUI task
-        ui::task(defaults, tui, clients, rcv_tui_ev).await;
+        ui::task(defaults, tui, irc_clients, rcv_tui_ev).await;
     });
 
     runtime.block_on(local);

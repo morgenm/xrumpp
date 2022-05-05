@@ -29,6 +29,7 @@ serde_yaml = "0.8"
 time = "0.1"
 tokio = { version = "1.17", default-features = false, features = [] }
 tokio-stream = { version = "0.1", features = [] }
+libxrumpp_client = {path = "../libxrumpp_client" }
 
 [dev-dependencies]
 term_input = { path = "../term_input" }

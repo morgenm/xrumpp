@@ -10,3 +10,4 @@ edition = "2021"
 tokio = { version = "1.17", default-features = false, features = ["net", "rt", "io-util", "macros", "sync"] }
 tokio-stream = { version = "0.1" }
 libstrophe-sys = {path="../libstrophe-sys"}
+log = "0.4"

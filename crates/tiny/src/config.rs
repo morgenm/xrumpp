@@ -11,6 +11,12 @@ pub(crate) struct SASLAuth {
 }
 
 #[derive(Clone, Deserialize)]
+pub(crate) enum ServerType {
+    IRC,
+    XMPP,
+}
+
+#[derive(Clone, Deserialize)]
 pub(crate) struct Server {
     /// Address of the server
     pub(crate) addr: String,
@@ -49,6 +55,9 @@ pub(crate) struct Server {
     /// Authenication method
     #[serde(rename = "sasl")]
     pub(crate) sasl_auth: Option<SASLAuth>,
+
+    #[serde(default)]
+    pub(crate) server_type: Option<ServerType>,
 }
 
 /// Similar to `Server`, but used when connecting via the `/connect` command.
@@ -244,6 +253,7 @@ mod tests {
                 join: vec![],
                 nickserv_ident: None,
                 sasl_auth: None,
+                server_type: Some(ServerType::IRC),
             }],
             defaults: Defaults {
                 nicks: vec!["".to_owned()],
