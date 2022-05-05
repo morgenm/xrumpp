@@ -91,19 +91,27 @@ async fn xmpp_main_loop(
         .build()
         .unwrap()[0];*/
     let mut client_conn: *mut xmpp_conn_t;
-    let is_connected: bool = false;
+    let mut is_connected: bool = false;
+    let mut ctx: *mut xmpp_ctx_t;
+    let xmpp_run_task;
     unsafe {
-        let ctx: *mut xmpp_ctx_t = xmpp_ctx_new(null(), null()); // Create context
+        xmpp_initialize();
+        ctx = xmpp_ctx_new(null(), null()); // Create context
         client_conn = xmpp_conn_new(ctx); // Create connection
         let jid = std::ffi::CString::new(server_info.jid).unwrap();
         xmpp_conn_set_jid(client_conn, jid.as_ptr()); // Set JID
 
         // Attempt connect
         let host = std::ffi::CString::new(server_info.host).unwrap();
-        is_connected = match xmpp_connect_client(client_conn, host.as_ptr(), server_info.port, null(), ctx) {
+        is_connected = match xmpp_connect_client(client_conn, host.as_ptr(), server_info.port, 
+            Some(connection_handler), &mut ctx as *mut _ as *mut std::ffi::c_void) {
             0 => false,
-            1 => true
+            _ => true
         };
+
+        // Run xmpp event loop in new thread
+        let task = async move { xmpp_run(ctx); };
+        xmpp_run_task = tokio::task::spawn_local(task);
     }
     // Receive command channel
 
@@ -124,5 +132,29 @@ async fn xmpp_main_loop(
 
             }
         }
+    }
+
+    tokio::join!(xmpp_run_task); // Wait for xmpp_run_task
+
+    // Shutdown libstrophe
+    unsafe {
+        xmpp_conn_release(client_conn);
+        xmpp_ctx_free(ctx);
+        xmpp_shutdown();
+    }
+}
+
+unsafe extern "C" fn connection_handler(
+    conn: *mut xmpp_conn_t,
+    event: xmpp_conn_event_t,
+    error: ::std::os::raw::c_int,
+    stream_error: *mut xmpp_stream_error_t,
+    userdata: *mut ::std::os::raw::c_void
+) {
+    if status == XMPP_CONN_CONNECT {
+        debug!("Connection xmpp");
+    }
+    else {
+        debug!("Disconnected");
     }
 }
