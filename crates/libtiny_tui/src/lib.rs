@@ -26,6 +26,7 @@ mod tests;
 use crate::tui::{CmdResult, TUIRet};
 use libtiny_common::{ChanNameRef, Event, MsgSource, MsgTarget, TabStyle};
 use term_input::Input;
+use libxrumpp_client::XMPPEvent;
 
 use std::cell::RefCell;
 use std::path::PathBuf;
@@ -48,7 +49,7 @@ pub struct TUI {
 }
 
 impl TUI {
-    pub fn run(config_path: PathBuf) -> (TUI, mpsc::Receiver<Event>) {
+    pub fn run(config_path: PathBuf) -> (TUI, mpsc::Receiver<Event>, mpsc::Receiver<XMPPEvent>) {
         let tui = Rc::new(RefCell::new(tui::TUI::new(config_path)));
         let inner = Rc::downgrade(&tui);
 

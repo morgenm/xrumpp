@@ -7,6 +7,7 @@ mod conn;
 mod debug_logging;
 mod ui;
 mod utils;
+mod xmpp_conn;
 
 #[cfg(test)]
 mod tests;
@@ -143,10 +144,11 @@ fn run(
         let mut xmpp_clients: Vec<XMPPClient> = Vec::new();
 
         for server in servers.iter().cloned() {
-            tui.new_server_tab(&server.addr, server.alias);
-
+            tui.draw();
+            
             match server.server_type.unwrap() {
                 config::ServerType::IRC => {
+                    tui.new_server_tab(&server.addr, server.alias);
                     let server_info = ServerInfo {
                         addr: server.addr,
                         port: server.port,
@@ -177,14 +179,35 @@ fn run(
                     irc_clients.push(client);
                 },
                 config::ServerType::XMPP => {
-                    debug!("XMPP Server");
+                    tui.new_server_tab(&server.addr, server.alias);
+                    tui.draw();
+
+                    let server_info = XMPPServerInfo {
+                        host: server.addr,
+                        port: server.port,
+                        pass: server.pass,
+                        jid: server.jid.unwrap(),
+                    };
+
+                    let (client, channel_receive_events) = XMPPClient::new(server_info);
+
+                    let tui_clone = tui.clone();
+                    let client_clone = client.clone();
+
+                    // Spawn a task to handle connection events
+                    tokio::task::spawn_local(xmpp_conn::task(channel_receive_events, tui_clone, Box::new(client_clone)));
+
+                    xmpp_clients.push(client);
                 }
             }
         }
 
         // TODO: Change this to handle both types of clients
         // Block on TUI task
-        ui::task(defaults, tui, irc_clients, rcv_tui_ev).await;
+        let irc_task = ui::task(defaults, tui, irc_clients, rcv_tui_ev);
+        let xmpp_task = ui::xmpp_task(defaults, tui, xmpp_clients, rcv_tui_ev);
+        irc_task.await;
+        xmpp_task.await;
     });
 
     runtime.block_on(local);

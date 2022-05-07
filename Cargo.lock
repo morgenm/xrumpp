@@ -570,6 +570,7 @@ dependencies = [
  "libc",
  "libtiny_common",
  "libtiny_wire",
+ "libxrumpp_client",
  "log",
  "mio",
  "notify-rust",

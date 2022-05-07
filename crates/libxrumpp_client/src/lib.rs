@@ -14,7 +14,7 @@ use libstrophe_sys::*;
 pub struct XMPPServerInfo {
     pub jid: String,
     pub pass: Option<String>,
-    pub nick: String,
+    //pub nick: String,
     pub host: String,
     pub port: u16
     //pub auto_join: Vec
@@ -25,17 +25,25 @@ enum XMPPCmd {
     Quit(Option<String>) // 
 }
 
-pub struct XMPPEvent {
+pub struct XMPPMsg {
 
 }
 
+pub enum XMPPEvent {
+    Version,
+    Message,
+    Msg(XMPPMsg),
+}
+
+#[derive(Clone)]
 pub struct XMPPClient {
-    channel_messages: mpsc::Sender<XMPPCmd>
+    channel_messages: mpsc::Sender<XMPPCmd>,
+    pub host: String,
 }
 
 impl XMPPClient {
-    pub fn new(server_info: XMPPServerInfo) {
-        
+    pub fn new(server_info: XMPPServerInfo) -> (XMPPClient, mpsc::Receiver<XMPPEvent>) {
+        xmpp_connect(server_info)
     }
     
     pub fn reconnect(&mut self) {
@@ -44,6 +52,11 @@ impl XMPPClient {
 
     pub fn joinMUC( &mut self ) {
 
+    }
+
+    /// Get host name of this connection.
+    pub fn get_serv_name(&self) -> &str {
+        &self.host
     }
 }
 
@@ -61,12 +74,14 @@ fn xmpp_connect(server_info: XMPPServerInfo) -> (XMPPClient, mpsc::Receiver<XMPP
     //
     // Main loop task
     //
+    let host = String::from(&server_info.host);
     let task = xmpp_main_loop(server_info, channel_send_events, channel_receive_cmds);
     tokio::task::spawn_local(task);
 
     (
         XMPPClient {
             channel_messages: channel_send_cmds,
+            host: host,
         },
         channel_receive_events
     )

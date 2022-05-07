@@ -7,6 +7,8 @@ use libtiny_common::{ChanNameRef, MsgSource, MsgTarget, TabStyle};
 use libtiny_logger::Logger;
 use libtiny_tui::TUI;
 
+use libxrumpp_client::{XMPPClient, XMPPEvent};
+
 use time::Tm;
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
@@ -236,5 +238,18 @@ pub(crate) fn send_msg(
     for msg in client.split_privmsg(extra_len, &msg) {
         client.privmsg(msg_target, msg, is_action);
         ui.add_privmsg(&client.get_nick(), msg, ts, &ui_target, false, is_action);
+    }
+}
+
+pub(crate) async fn xmpp_task(
+    defaults: config::Defaults,
+    ui: UI,
+    mut clients: Vec<XMPPClient>,
+    rcv_ev: mpsc::Receiver<XMPPEvent>,
+) {
+    let mut rcv_ev = ReceiverStream::new(rcv_ev);
+    while let Some(ev) = rcv_ev.next().await {
+        
+        ui.draw();
     }
 }

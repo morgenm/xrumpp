@@ -58,6 +58,9 @@ pub(crate) struct Server {
 
     #[serde(default)]
     pub(crate) server_type: Option<ServerType>,
+
+    #[serde(default)]
+    pub jid: Option<String>,
 }
 
 /// Similar to `Server`, but used when connecting via the `/connect` command.
